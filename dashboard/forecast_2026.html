@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>2026 Expense Forecast — SF Main Expense Data</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --card2: #21253a;
+    --border: #2e3250;
+    --accent: #4f8ef7;
+    --green: #06d6a0;
+    --yellow: #ffd166;
+    --red: #ef476f;
+    --purple: #7c5cbf;
+    --teal: #2ec4b6;
+    --orange: #f77f00;
+    --text: #e8eaf6;
+    --muted: #8892b0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; }
+
+  .header {
+    background: linear-gradient(135deg, #1a1d27 0%, #12162b 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 22px 36px;
+    display: flex; align-items: flex-start; justify-content: space-between;
+  }
+  .header h1 { font-size: 1.45rem; font-weight: 700; color: #fff; }
+  .header p { font-size: 0.82rem; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+  .header-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+  .badge.blue { background: rgba(79,142,247,0.15); border: 1px solid rgba(79,142,247,0.3); color: var(--accent); }
+  .badge.green { background: rgba(6,214,160,0.15); border: 1px solid rgba(6,214,160,0.3); color: var(--green); }
+  .badge.yellow { background: rgba(255,209,102,0.15); border: 1px solid rgba(255,209,102,0.3); color: var(--yellow); }
+
+  .methodology {
+    background: rgba(79,142,247,0.06);
+    border: 1px solid rgba(79,142,247,0.2);
+    border-left: 4px solid var(--accent);
+    border-radius: 8px;
+    padding: 14px 20px;
+    margin: 20px 36px 0;
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  .methodology strong { color: var(--text); }
+
+  .main { padding: 20px 36px 40px; }
+
+  /* KPI STRIP */
+  .kpi-strip { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 24px; }
+  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; position: relative; overflow: hidden; }
+  .kpi::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; }
+  .kpi.b::after { background: var(--accent); }
+  .kpi.g::after { background: var(--green); }
+  .kpi.y::after { background: var(--yellow); }
+  .kpi.r::after { background: var(--red); }
+  .kpi.p::after { background: var(--purple); }
+  .kpi.t::after { background: var(--teal); }
+  .kpi-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 7px; }
+  .kpi-val { font-size: 1.5rem; font-weight: 700; color: #fff; line-height: 1; }
+  .kpi-sub { font-size: 0.72rem; color: var(--muted); margin-top: 5px; }
+  .delta { display: inline-flex; align-items: center; gap: 3px; font-size: 0.73rem; font-weight: 700; padding: 2px 7px; border-radius: 10px; margin-top: 5px; }
+  .delta.down { background: rgba(239,71,111,0.15); color: var(--red); }
+  .delta.up { background: rgba(6,214,160,0.15); color: var(--green); }
+  .delta.neutral { background: rgba(255,209,102,0.15); color: var(--yellow); }
+
+  /* CHART CARDS */
+  .row { display: grid; gap: 18px; margin-bottom: 18px; }
+  .row.cols2 { grid-template-columns: 1fr 1fr; }
+  .row.cols3 { grid-template-columns: 1fr 1fr 1fr; }
+  .row.full { grid-template-columns: 1fr; }
+  .row.w6040 { grid-template-columns: 3fr 2fr; }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+  .card-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+  .card-title { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+  .card-sub { font-size: 0.73rem; color: var(--muted); margin-top: 3px; }
+  .tag { font-size: 0.7rem; font-weight: 600; padding: 3px 9px; border-radius: 6px; white-space: nowrap; }
+  .tag.actual { background: rgba(6,214,160,0.15); color: var(--green); border: 1px solid rgba(6,214,160,0.3); }
+  .tag.forecast { background: rgba(255,209,102,0.15); color: var(--yellow); border: 1px solid rgba(255,209,102,0.3); }
+  .tag.compare { background: rgba(124,92,191,0.15); color: var(--purple); border: 1px solid rgba(124,92,191,0.3); }
+
+  /* TABLE */
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  th { background: var(--card2); color: var(--muted); font-weight: 600; text-align: left; padding: 9px 13px; border-bottom: 1px solid var(--border); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.4px; }
+  td { padding: 8px 13px; border-bottom: 1px solid rgba(46,50,80,0.4); }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  tr.actual-row td { border-left: 3px solid var(--green); }
+  tr.forecast-row td { border-left: 3px solid var(--yellow); }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 0.7rem; font-weight: 700; }
+  .pill.actual { background: rgba(6,214,160,0.15); color: var(--green); }
+  .pill.forecast { background: rgba(255,209,102,0.15); color: var(--yellow); }
+  .num { font-variant-numeric: tabular-nums; }
+  .up-val { color: var(--green); font-weight: 600; }
+  .dn-val { color: var(--red); font-weight: 600; }
+
+  /* LEGEND */
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.73rem; color: var(--muted); }
+  .legend-box { width: 12px; height: 12px; border-radius: 3px; }
+  .legend-line { width: 20px; height: 3px; border-radius: 2px; }
+
+  /* SECTION LABEL */
+  .section-label { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin: 26px 0 12px; padding-bottom: 7px; border-bottom: 1px solid var(--border); }
+
+  /* INSIGHT BOX */
+  .insight-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .insight { background: var(--card2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+  .insight-title { font-size: 0.75rem; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .insight-body { font-size: 0.78rem; color: var(--muted); line-height: 1.6; }
+  .insight-body strong { color: var(--text); }
+
+  @media (max-width: 1100px) {
+    .kpi-strip { grid-template-columns: repeat(3, 1fr); }
+    .row.cols3 { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 750px) {
+    .kpi-strip { grid-template-columns: repeat(2, 1fr); }
+    .row.cols2, .row.w6040, .row.cols3 { grid-template-columns: 1fr; }
+    .main { padding: 16px; }
+    .header { padding: 16px; flex-direction: column; gap: 10px; }
+    .methodology { margin: 12px 16px 0; }
+  }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <h1>2026 Expense Forecast — SF Main Expense Data</h1>
+    <p>Jan–Feb 2026 actuals as baseline &nbsp;|&nbsp; Mar–Dec 2026 projected using 2025 seasonal trend index</p>
+    <div class="header-badges">
+      <span class="badge green">◆ Jan + Feb 2026 = Actual</span>
+      <span class="badge yellow">◇ Mar–Dec 2026 = Trend Forecast</span>
+      <span class="badge blue">2025 Seasonal Index Applied</span>
+    </div>
+  </div>
+</div>
+
+<!-- METHODOLOGY -->
+<div class="methodology">
+  <strong>Forecast Methodology:</strong>
+  (1) Use Jan 2026 ($16.6M) and Feb 2026 ($22.0M) as confirmed actuals &nbsp;|&nbsp;
+  (2) Compute each month's share of the 2025 full-year total as a <strong>seasonal index</strong> &nbsp;|&nbsp;
+  (3) Jan+Feb 2026 actuals ($38.6M) represent 7.40% of the year per the 2025 pattern, implying a <strong>2026 annual run-rate of $521.3M</strong> &nbsp;|&nbsp;
+  (4) Apply that run-rate × each month's seasonal index to forecast Mar–Dec 2026 &nbsp;|&nbsp;
+  (5) Full-year 2026 = Jan+Feb actuals + Mar–Dec trend forecast
+</div>
+
+<div class="main">
+
+  <!-- KPI STRIP -->
+  <div class="kpi-strip" style="margin-top:20px;">
+    <div class="kpi b">
+      <div class="kpi-label">2026 Full Year Forecast</div>
+      <div class="kpi-val">$521.3M</div>
+      <div class="delta down">▼ 20.4% vs 2025</div>
+    </div>
+    <div class="kpi g">
+      <div class="kpi-label">Jan + Feb 2026 Actuals</div>
+      <div class="kpi-val">$38.6M</div>
+      <div class="kpi-sub">7.40% of implied annual</div>
+    </div>
+    <div class="kpi y">
+      <div class="kpi-label">Mar–Dec 2026 Forecast</div>
+      <div class="kpi-val">$482.7M</div>
+      <div class="kpi-sub">92.6% of full year</div>
+    </div>
+    <div class="kpi p">
+      <div class="kpi-label">2025 Full Year Actual</div>
+      <div class="kpi-val">$654.8M</div>
+      <div class="kpi-sub">Baseline for index</div>
+    </div>
+    <div class="kpi t">
+      <div class="kpi-label">Implied Annual Run-Rate</div>
+      <div class="kpi-val">$521.3M</div>
+      <div class="kpi-sub">From Jan+Feb pace</div>
+    </div>
+    <div class="kpi r">
+      <div class="kpi-label">vs Sheet Pipeline ($447M)</div>
+      <div class="kpi-val">+$74.0M</div>
+      <div class="delta neutral">▲ Trend higher than pipeline</div>
+    </div>
+  </div>
+
+  <!-- MAIN CHART: Monthly 2025 vs 2026 Forecast -->
+  <div class="row full">
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Monthly Spend — 2025 Actuals vs 2026 Forecast</div>
+          <div class="card-sub">2026 Jan–Feb are confirmed actuals (◆) &nbsp;|&nbsp; Mar–Dec are trend-based forecasts (◇) using 2025 seasonal index</div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-box" style="background:#06d6a0"></div>2025 Actual</div>
+          <div class="legend-item"><div class="legend-box" style="background:#4f8ef7"></div>2026 Actual (Jan–Feb)</div>
+          <div class="legend-item"><div class="legend-box" style="background:rgba(255,209,102,0.5);border:2px dashed #ffd166"></div>2026 Forecast (Mar–Dec)</div>
+        </div>
+      </div>
+      <canvas id="mainChart" height="75"></canvas>
+    </div>
+  </div>
+
+  <!-- QUARTERLY + SEASONAL INDEX -->
+  <div class="row cols2">
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Quarterly View — 2025 vs 2026 Forecast</div>
+          <div class="card-sub">Q1 includes Jan+Feb actuals + Mar forecast</div>
+        </div>
+        <span class="tag compare">YoY −20.4%</span>
+      </div>
+      <canvas id="quarterlyChart" height="200"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">2025 Seasonal Index</div>
+          <div class="card-sub">Monthly share of annual spend — applied to scale 2026</div>
+        </div>
+        <span class="tag forecast">Index basis</span>
+      </div>
+      <canvas id="seasonalChart" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- COMPARISON: TREND vs SHEET PIPELINE -->
+  <div class="row cols2">
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Trend Forecast vs Sheet Pipeline — Monthly Delta</div>
+          <div class="card-sub">Positive = trend forecasts higher than sheet; Negative = sheet pipeline is higher</div>
+        </div>
+        <span class="tag compare">Δ = $+74M total</span>
+      </div>
+      <canvas id="deltaChart" height="200"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Full Year Comparison — Three Views</div>
+          <div class="card-sub">2025 actual vs 2026 trend forecast vs 2026 sheet pipeline</div>
+        </div>
+      </div>
+      <canvas id="threeWayChart" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- CUMULATIVE CHART -->
+  <div class="row full">
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Cumulative Spend Build — 2025 vs 2026 Forecast</div>
+          <div class="card-sub">Running total through the year — shows pacing and year-end trajectory</div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-line" style="background:#06d6a0"></div>2025 Actual</div>
+          <div class="legend-item"><div class="legend-line" style="background:#4f8ef7"></div>2026 Trend Forecast</div>
+          <div class="legend-item"><div class="legend-line" style="background:#ffd166;border-top:2px dashed #ffd166;height:0"></div>2026 Sheet Pipeline</div>
+        </div>
+      </div>
+      <canvas id="cumulativeChart" height="70"></canvas>
+    </div>
+  </div>
+
+  <!-- DETAIL TABLE -->
+  <div class="section-label">Full Monthly Detail — 2026 Forecast vs 2025 Actual</div>
+  <div class="card">
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>Type</th>
+            <th>2025 Actual</th>
+            <th>2025 Seasonal Index</th>
+            <th>2026 Forecast / Actual</th>
+            <th>YoY Δ ($)</th>
+            <th>YoY Δ (%)</th>
+            <th>Sheet Pipeline</th>
+            <th>Trend vs Pipeline</th>
+          </tr>
+        </thead>
+        <tbody id="detailTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- QUARTERLY TABLE -->
+  <div class="section-label">Quarterly Summary</div>
+  <div class="card">
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Quarter</th>
+            <th>2025 Actual</th>
+            <th>2026 Forecast</th>
+            <th>YoY Δ ($)</th>
+            <th>YoY Δ (%)</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="qTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- INSIGHTS -->
+  <div class="section-label">Key Forecast Insights</div>
+  <div class="insight-grid">
+    <div class="insight">
+      <div class="insight-title">📉 Implied YoY Decline of −20.4%</div>
+      <div class="insight-body">
+        Jan and Feb 2026 actuals came in at <strong>$16.6M and $22.0M</strong> respectively — both below their 2025 counterparts ($19.1M and $29.4M). This early-year pacing implies a full-year run-rate of <strong>$521.3M</strong>, down 20.4% from 2025's $654.8M. The seasonal pattern from 2025 is preserved in the forecast shape.
+      </div>
+    </div>
+    <div class="insight">
+      <div class="insight-title">📅 Q4 Remains the Heaviest Quarter</div>
+      <div class="insight-body">
+        Following the 2025 seasonal pattern, <strong>Q4 2026 is forecast at $224.3M</strong> — representing 43% of the full year. December alone is projected at <strong>$108.8M</strong> (20.9% of annual), consistent with the year-end spend acceleration observed in 2024 and 2025.
+      </div>
+    </div>
+    <div class="insight">
+      <div class="insight-title">📊 Trend Forecast vs Sheet Pipeline: +$74M Gap</div>
+      <div class="insight-body">
+        The trend-based forecast of <strong>$521.3M</strong> is $74M higher than the sheet's current pipeline data of <strong>$447.3M</strong>. This gap is most pronounced in Sep (+$44M), Dec (+$46M), and Oct (+$33M) — months where the sheet may have uncommitted or not-yet-entered deals that the trend model anticipates based on 2025 patterns.
+      </div>
+    </div>
+    <div class="insight">
+      <div class="insight-title">⚠️ Jan–Feb Pacing Below 2025</div>
+      <div class="insight-body">
+        January 2026 came in <strong>−13.0% below Jan 2025</strong>, and February came in <strong>−25.2% below Feb 2025</strong>. This slow start is the primary driver of the implied annual decline. If Mar–Jun actuals track closer to 2025 levels, the full-year outcome could be revised upward from the current $521M forecast.
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+// ===================== DATA =====================
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+const actuals2025 = [19101685,29367505,48069873,30504540,35545623,36678344,44323900,49943836,79512767,84793236,60317630,136664314];
+const total2025 = actuals2025.reduce((a,b)=>a+b,0);
+
+const seasonalIndex = actuals2025.map(v => v/total2025);
+
+// 2026: Jan+Feb actual, Mar-Dec forecast
+const forecast2026 = [
+  16617880,  // Jan actual
+  21970774,  // Feb actual
+  38270739,  // Mar forecast
+  24286132,  // Apr forecast
+  28299581,  // May forecast
+  29201394,  // Jun forecast
+  35288389,  // Jul forecast
+  39762691,  // Aug forecast
+  63303939,  // Sep forecast
+  67507975,  // Oct forecast
+  48021767,  // Nov forecast
+  108805035, // Dec forecast
+];
+const total2026 = forecast2026.reduce((a,b)=>a+b,0);
+
+const sheet2026 = [16617880,21970774,47292713,50736685,21438943,45517506,17520772,22925373,19290780,34263581,87083715,62677728];
+const totalSheet2026 = sheet2026.reduce((a,b)=>a+b,0);
+
+const isActual = [true,true,false,false,false,false,false,false,false,false,false,false];
+
+// Quarterly
+const q2025 = [96539063,102728507,173780503,281775180];
+const q2026 = [76859393,81787107,138355019,224334777];
+
+// Cumulative
+function cumulative(arr) {
+  const out = [];
+  let s = 0;
+  arr.forEach(v => { s += v; out.push(s); });
+  return out;
+}
+const cum2025 = cumulative(actuals2025);
+const cum2026 = cumulative(forecast2026);
+const cumSheet = cumulative(sheet2026);
+
+// ===================== HELPERS =====================
+const fmt = v => v >= 1e9 ? `$${(v/1e9).toFixed(2)}B` : v >= 1e6 ? `$${(v/1e6).toFixed(1)}M` : `$${(v/1e3).toFixed(0)}K`;
+const fmtFull = v => '$' + v.toLocaleString('en-US', {maximumFractionDigits:0});
+
+Chart.defaults.color = '#8892b0';
+Chart.defaults.borderColor = '#2e3250';
+Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+Chart.defaults.font.size = 11;
+
+// ===================== MAIN CHART =====================
+new Chart(document.getElementById('mainChart'), {
+  type: 'bar',
+  data: {
+    labels: MONTHS,
+    datasets: [
+      {
+        label: '2025 Actual',
+        data: actuals2025,
+        backgroundColor: 'rgba(6,214,160,0.55)',
+        borderColor: '#06d6a0',
+        borderWidth: 1,
+        borderRadius: 5,
+        order: 2
+      },
+      {
+        label: '2026 Actual (Jan–Feb)',
+        data: forecast2026.map((v,i) => isActual[i] ? v : null),
+        backgroundColor: 'rgba(79,142,247,0.75)',
+        borderColor: '#4f8ef7',
+        borderWidth: 1.5,
+        borderRadius: 5,
+        order: 1
+      },
+      {
+        label: '2026 Forecast (Mar–Dec)',
+        data: forecast2026.map((v,i) => !isActual[i] ? v : null),
+        backgroundColor: 'rgba(255,209,102,0.3)',
+        borderColor: '#ffd166',
+        borderWidth: 2,
+        borderRadius: 5,
+        borderDash: [4,3],
+        order: 1
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'top', labels: { usePointStyle: true, pointStyle: 'rect', padding: 18 } },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.dataset.label}: ${fmtFull(ctx.raw)}`,
+          afterBody: (items) => {
+            const idx = items[0].dataIndex;
+            const yoy = ((forecast2026[idx] / actuals2025[idx]) - 1) * 100;
+            return [`YoY: ${yoy >= 0 ? '+' : ''}${yoy.toFixed(1)}%`];
+          }
+        }
+      }
+    },
+    scales: {
+      y: { ticks: { callback: v => fmt(v) }, grid: { color: '#2e325033' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// ===================== QUARTERLY =====================
+new Chart(document.getElementById('quarterlyChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Q1','Q2','Q3','Q4'],
+    datasets: [
+      {
+        label: '2025 Actual',
+        data: q2025,
+        backgroundColor: 'rgba(6,214,160,0.55)',
+        borderColor: '#06d6a0',
+        borderWidth: 1,
+        borderRadius: 6
+      },
+      {
+        label: '2026 Forecast',
+        data: q2026,
+        backgroundColor: 'rgba(255,209,102,0.35)',
+        borderColor: '#ffd166',
+        borderWidth: 2,
+        borderRadius: 6
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'top', labels: { usePointStyle: true, pointStyle: 'rect' } },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.raw)}`,
+          afterBody: items => {
+            const i = items[0].dataIndex;
+            const yoy = ((q2026[i]/q2025[i])-1)*100;
+            return [`YoY: ${yoy.toFixed(1)}%`];
+          }
+        }
+      }
+    },
+    scales: {
+      y: { ticks: { callback: v => fmt(v) }, grid: { color: '#2e325033' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// ===================== SEASONAL INDEX =====================
+new Chart(document.getElementById('seasonalChart'), {
+  type: 'bar',
+  data: {
+    labels: MONTHS,
+    datasets: [{
+      label: '2025 Monthly Share',
+      data: seasonalIndex.map(v => (v*100).toFixed(2)),
+      backgroundColor: MONTHS.map((_, i) => i >= 2 ? 'rgba(124,92,191,0.65)' : 'rgba(79,142,247,0.65)'),
+      borderColor: MONTHS.map((_, i) => i >= 2 ? '#7c5cbf' : '#4f8ef7'),
+      borderWidth: 1,
+      borderRadius: 5
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.raw}% of annual` } }
+    },
+    scales: {
+      y: { ticks: { callback: v => v + '%' }, grid: { color: '#2e325033' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// ===================== DELTA CHART =====================
+const deltas = forecast2026.map((v, i) => v - sheet2026[i]);
+new Chart(document.getElementById('deltaChart'), {
+  type: 'bar',
+  data: {
+    labels: MONTHS,
+    datasets: [{
+      label: 'Trend − Sheet Pipeline',
+      data: deltas,
+      backgroundColor: deltas.map(v => v >= 0 ? 'rgba(79,142,247,0.6)' : 'rgba(239,71,111,0.6)'),
+      borderColor: deltas.map(v => v >= 0 ? '#4f8ef7' : '#ef476f'),
+      borderWidth: 1,
+      borderRadius: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.raw >= 0 ? '+' : ''}${fmt(ctx.raw)}` } }
+    },
+    scales: {
+      y: { ticks: { callback: v => fmt(v) }, grid: { color: '#2e325033' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// ===================== THREE-WAY =====================
+new Chart(document.getElementById('threeWayChart'), {
+  type: 'bar',
+  data: {
+    labels: ['2025 Actual', '2026 Trend Fcst', '2026 Sheet Pipeline'],
+    datasets: [{
+      data: [total2025, total2026, totalSheet2026],
+      backgroundColor: ['rgba(6,214,160,0.6)','rgba(255,209,102,0.5)','rgba(124,92,191,0.5)'],
+      borderColor: ['#06d6a0','#ffd166','#7c5cbf'],
+      borderWidth: 1.5,
+      borderRadius: 8
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${fmt(ctx.raw)}` } }
+    },
+    scales: {
+      y: { ticks: { callback: v => fmt(v) }, grid: { color: '#2e325033' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// ===================== CUMULATIVE =====================
+new Chart(document.getElementById('cumulativeChart'), {
+  type: 'line',
+  data: {
+    labels: MONTHS,
+    datasets: [
+      {
+        label: '2025 Actual',
+        data: cum2025,
+        borderColor: '#06d6a0',
+        backgroundColor: 'rgba(6,214,160,0.06)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 4,
+        pointBackgroundColor: '#06d6a0'
+      },
+      {
+        label: '2026 Trend Forecast',
+        data: cum2026,
+        borderColor: '#4f8ef7',
+        backgroundColor: 'rgba(79,142,247,0.06)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: ctx => ctx.dataIndex < 2 ? 6 : 4,
+        pointBackgroundColor: ctx => ctx.dataIndex < 2 ? '#4f8ef7' : '#ffd166',
+        pointBorderColor: ctx => ctx.dataIndex < 2 ? '#4f8ef7' : '#ffd166',
+        segment: {
+          borderDash: ctx => ctx.p0DataIndex >= 1 ? [5,3] : undefined,
+          borderColor: ctx => ctx.p0DataIndex >= 1 ? '#ffd166' : '#4f8ef7'
+        }
+      },
+      {
+        label: '2026 Sheet Pipeline',
+        data: cumSheet,
+        borderColor: '#7c5cbf',
+        borderDash: [6,3],
+        backgroundColor: 'transparent',
+        fill: false,
+        tension: 0.4,
+        pointRadius: 3,
+        pointBackgroundColor: '#7c5cbf'
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'top', labels: { usePointStyle: true, pointStyle: 'circle', padding: 16 } },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.raw)}` } }
+    },
+    scales: {
+      y: { ticks: { callback: v => fmt(v) }, grid: { color: '#2e325033' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// ===================== DETAIL TABLE =====================
+const tbody = document.getElementById('detailTableBody');
+let runTotal2025 = 0, runTotal2026 = 0;
+
+MONTHS.forEach((mo, i) => {
+  const v25 = actuals2025[i];
+  const v26 = forecast2026[i];
+  const sp  = sheet2026[i];
+  const idx = seasonalIndex[i];
+  const yoyDollar = v26 - v25;
+  const yoyPct = ((v26/v25)-1)*100;
+  const delta = v26 - sp;
+  const type = isActual[i] ? 'actual' : 'forecast';
+
+  const tr = document.createElement('tr');
+  tr.className = type + '-row';
+  tr.innerHTML = `
+    <td><strong>${mo} 2026</strong></td>
+    <td><span class="pill ${type}">${type === 'actual' ? '◆ Actual' : '◇ Forecast'}</span></td>
+    <td class="num">$${v25.toLocaleString()}</td>
+    <td class="num">${(idx*100).toFixed(2)}%</td>
+    <td class="num"><strong>$${v26.toLocaleString()}</strong></td>
+    <td class="num ${yoyDollar >= 0 ? 'up-val' : 'dn-val'}">${yoyDollar >= 0 ? '+' : ''}$${Math.abs(yoyDollar).toLocaleString()}</td>
+    <td class="${yoyPct >= 0 ? 'up-val' : 'dn-val'}">${yoyPct >= 0 ? '+' : ''}${yoyPct.toFixed(1)}%</td>
+    <td class="num">$${sp.toLocaleString()}</td>
+    <td class="num ${delta >= 0 ? 'up-val' : 'dn-val'}">${delta >= 0 ? '+' : ''}$${Math.abs(delta).toLocaleString()}</td>
+  `;
+  tbody.appendChild(tr);
+});
+
+// Total row
+const totalYoY = ((total2026/total2025)-1)*100;
+const totalDelta = total2026 - totalSheet2026;
+const tfr = document.createElement('tr');
+tfr.style.cssText = 'background:rgba(255,255,255,0.03);font-weight:700;';
+tfr.innerHTML = `
+  <td><strong>FULL YEAR 2026</strong></td>
+  <td>—</td>
+  <td class="num">$${total2025.toLocaleString()}</td>
+  <td class="num">100.00%</td>
+  <td class="num"><strong>$${total2026.toLocaleString()}</strong></td>
+  <td class="num dn-val">−$${Math.abs(total2026-total2025).toLocaleString()}</td>
+  <td class="dn-val">${totalYoY.toFixed(1)}%</td>
+  <td class="num">$${totalSheet2026.toLocaleString()}</td>
+  <td class="num up-val">+$${Math.abs(totalDelta).toLocaleString()}</td>
+`;
+tbody.appendChild(tfr);
+
+// ===================== QUARTERLY TABLE =====================
+const qNotes = ['Jan+Feb actual, Mar forecast','Apr–Jun forecast','Jul–Sep forecast','Oct–Dec forecast'];
+const qTbody = document.getElementById('qTableBody');
+['Q1','Q2','Q3','Q4'].forEach((q, i) => {
+  const v25 = q2025[i], v26 = q2026[i];
+  const yoyD = v26 - v25;
+  const yoyP = ((v26/v25)-1)*100;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><strong>${q}</strong></td>
+    <td class="num">$${v25.toLocaleString()}</td>
+    <td class="num"><strong>$${v26.toLocaleString()}</strong></td>
+    <td class="num dn-val">−$${Math.abs(yoyD).toLocaleString()}</td>
+    <td class="dn-val">${yoyP.toFixed(1)}%</td>
+    <td style="color:var(--muted);font-size:0.75rem">${qNotes[i]}</td>
+  `;
+  qTbody.appendChild(tr);
+});
+const totalYoYQ = ((total2026/total2025)-1)*100;
+const tfq = document.createElement('tr');
+tfq.style.cssText = 'background:rgba(255,255,255,0.03);font-weight:700;';
+tfq.innerHTML = `
+  <td>Full Year</td>
+  <td class="num">$${total2025.toLocaleString()}</td>
+  <td class="num">$${total2026.toLocaleString()}</td>
+  <td class="num dn-val">−$${Math.abs(total2026-total2025).toLocaleString()}</td>
+  <td class="dn-val">${totalYoYQ.toFixed(1)}%</td>
+  <td></td>
+`;
+qTbody.appendChild(tfq);
+</script>
+</body>
+</html>

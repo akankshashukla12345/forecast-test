@@ -1,0 +1,141 @@
+{
+  "monthly_2025": {
+    "1": {
+      "recognized": 19101685.0,
+      "funding": 322719594.0,
+      "count": 246
+    },
+    "2": {
+      "recognized": 29367505.0,
+      "funding": 491243523.0,
+      "count": 332
+    },
+    "3": {
+      "recognized": 48069873.0,
+      "funding": 675540333.0,
+      "count": 390
+    },
+    "4": {
+      "recognized": 30504540.0,
+      "funding": 520500704.0,
+      "count": 355
+    },
+    "5": {
+      "recognized": 35545623.0,
+      "funding": 587443255.0,
+      "count": 341
+    },
+    "6": {
+      "recognized": 36678344.0,
+      "funding": 591916339.0,
+      "count": 409
+    },
+    "7": {
+      "recognized": 44323900.0,
+      "funding": 665467359.0,
+      "count": 478
+    },
+    "8": {
+      "recognized": 49943836.0,
+      "funding": 640235505.0,
+      "count": 548
+    },
+    "9": {
+      "recognized": 79512767.0,
+      "funding": 724197441.0,
+      "count": 556
+    },
+    "10": {
+      "recognized": 84793236.0,
+      "funding": 816452566.0,
+      "count": 654
+    },
+    "11": {
+      "recognized": 60317630.0,
+      "funding": 718551715.0,
+      "count": 607
+    },
+    "12": {
+      "recognized": 136664314.0,
+      "funding": 1468181179.0,
+      "count": 836
+    }
+  },
+  "monthly_2026_all": {
+    "1": {
+      "recognized": 16617880.0,
+      "funding": 357613912.0,
+      "count": 277
+    },
+    "2": {
+      "recognized": 21970774.0,
+      "funding": 533733046.0,
+      "count": 286
+    },
+    "3": {
+      "recognized": 47292713.0,
+      "funding": 739692859.0,
+      "count": 446
+    },
+    "4": {
+      "recognized": 50736685.0,
+      "funding": 538715838.0,
+      "count": 277
+    },
+    "5": {
+      "recognized": 21438943.0,
+      "funding": 309781101.0,
+      "count": 231
+    },
+    "6": {
+      "recognized": 45517506.0,
+      "funding": 775473258.0,
+      "count": 257
+    },
+    "7": {
+      "recognized": 17520772.0,
+      "funding": 290566870.0,
+      "count": 196
+    },
+    "8": {
+      "recognized": 22925373.0,
+      "funding": 428864113.0,
+      "count": 186
+    },
+    "9": {
+      "recognized": 19290780.0,
+      "funding": 333437644.0,
+      "count": 184
+    },
+    "10": {
+      "recognized": 34263581.0,
+      "funding": 416525861.0,
+      "count": 175
+    },
+    "11": {
+      "recognized": 87083715.0,
+      "funding": 617497615.0,
+      "count": 174
+    },
+    "12": {
+      "recognized": 62677728.0,
+      "funding": 623670533.0,
+      "count": 152
+    }
+  },
+  "monthly_2026_actual": {
+    "1": {
+      "recognized": 1391644.0,
+      "count": 116
+    },
+    "2": {
+      "recognized": 2564835.0,
+      "count": 92
+    },
+    "3": {
+      "recognized": 564.0,
+      "count": 2
+    }
+  },
+  "total_2025": 654823253.0
+}
